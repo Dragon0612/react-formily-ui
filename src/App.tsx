@@ -8,7 +8,9 @@ import {
   ApiOutlined,
   BulbOutlined,
   ShoppingCartOutlined,
+  BookOutlined,
 } from '@ant-design/icons'
+import CoreExample from './components/CoreExample'
 import BasicForm from './components/BasicForm'
 import AdvancedForm from './components/AdvancedForm'
 import ArrayForm from './components/ArrayForm'
@@ -21,6 +23,7 @@ const { Header, Content, Sider } = Layout
 const { Title } = Typography
 
 type PageKey = 
+  | 'core'
   | 'basic' 
   | 'advanced' 
   | 'array' 
@@ -30,6 +33,7 @@ type PageKey =
   | 'realworld'
 
 const pageComponents: Record<PageKey, React.ReactNode> = {
+  core: <CoreExample />,
   basic: <BasicForm />,
   advanced: <AdvancedForm />,
   array: <ArrayForm />,
@@ -40,6 +44,14 @@ const pageComponents: Record<PageKey, React.ReactNode> = {
 }
 
 const menuItems = [
+  {
+    key: 'core',
+    icon: <BookOutlined />,
+    label: 'Core 学习示例',
+  },
+  {
+    type: 'divider' as const,
+  },
   {
     key: 'basic',
     icon: <FormOutlined />,
@@ -84,7 +96,7 @@ const menuItems = [
 ]
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<PageKey>('basic')
+  const [currentPage, setCurrentPage] = useState<PageKey>('core')
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
