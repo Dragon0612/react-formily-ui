@@ -1,6 +1,6 @@
-import { observable, autorun, computed, reaction, toJS } from '@formily/reactive'
+import { observable, autorun, reaction, toJS } from '@formily/reactive'
 import { observer } from '@formily/reactive-react'
-import { Card, Typography, Space, Button, Divider, Tag } from 'antd'
+import { Card, Typography, Space, Button, Tag } from 'antd'
 import { useState, useEffect } from 'react'
 
 const { Title, Paragraph, Text } = Typography

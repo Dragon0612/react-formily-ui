@@ -10,9 +10,11 @@ import {
   ShoppingCartOutlined,
   BookOutlined,
   ThunderboltOutlined,
+  CodeOutlined,
 } from '@ant-design/icons'
 import CoreExample from './components/CoreExample'
 import ReactiveExample from './components/ReactiveExample'
+import ReactExample from './components/ReactExample'
 import BasicForm from './components/BasicForm'
 import AdvancedForm from './components/AdvancedForm'
 import ArrayForm from './components/ArrayForm'
@@ -27,6 +29,7 @@ const { Title } = Typography
 type PageKey = 
   | 'core'
   | 'reactive'
+  | 'react'
   | 'basic' 
   | 'advanced' 
   | 'array' 
@@ -38,6 +41,7 @@ type PageKey =
 const pageComponents: Record<PageKey, React.ReactNode> = {
   core: <CoreExample />,
   reactive: <ReactiveExample />,
+  react: <ReactExample />,
   basic: <BasicForm />,
   advanced: <AdvancedForm />,
   array: <ArrayForm />,
@@ -57,6 +61,11 @@ const menuItems = [
     key: 'reactive',
     icon: <ThunderboltOutlined />,
     label: 'Reactive 学习示例',
+  },
+  {
+    key: 'react',
+    icon: <CodeOutlined />,
+    label: 'React 学习示例',
   },
   {
     type: 'divider' as const,
