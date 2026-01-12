@@ -15,6 +15,7 @@ import {
 import CoreExample from './components/CoreExample'
 import ReactiveExample from './components/ReactiveExample'
 import ReactExample from './components/ReactExample'
+import ReactHooksExample from './components/ReactHooksExample'
 import BasicForm from './components/BasicForm'
 import AdvancedForm from './components/AdvancedForm'
 import ArrayForm from './components/ArrayForm'
@@ -30,6 +31,7 @@ type PageKey =
   | 'core'
   | 'reactive'
   | 'react'
+  | 'hooks'
   | 'basic' 
   | 'advanced' 
   | 'array' 
@@ -42,6 +44,7 @@ const pageComponents: Record<PageKey, React.ReactNode> = {
   core: <CoreExample />,
   reactive: <ReactiveExample />,
   react: <ReactExample />,
+  hooks: <ReactHooksExample />,
   basic: <BasicForm />,
   advanced: <AdvancedForm />,
   array: <ArrayForm />,
@@ -66,6 +69,11 @@ const menuItems = [
     key: 'react',
     icon: <CodeOutlined />,
     label: 'React 学习示例',
+  },
+  {
+    key: 'hooks',
+    icon: <CodeOutlined />,
+    label: 'React Hooks 示例',
   },
   {
     type: 'divider' as const,
