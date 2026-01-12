@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo, useContext, createContext } from 'react'
 import { Card, Typography, Space, Button, Input, Tag, Divider, Alert } from 'antd'
+import type { InputRef } from 'antd'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -86,18 +87,16 @@ const UseEffectExample = () => {
 
   // useEffect 用于处理副作用（如数据获取、订阅、DOM 操作等）
   
-  // 1. 每次渲染后都执行
-  useEffect(() => {
-    setLogs((prev) => [...prev, `组件渲染了，count = ${count}`])
-  })
-
-  // 2. 只在组件挂载时执行一次（依赖数组为空）
+  // 1. 只在组件挂载时执行一次（依赖数组为空）
   useEffect(() => {
     setLogs((prev) => [...prev, '组件首次挂载'])
     
     // 清理函数：组件卸载时执行
+    // 注意：清理函数中不应该调用 setState，因为组件可能已经卸载
     return () => {
-      setLogs((prev) => [...prev, '组件卸载了'])
+      // 清理函数通常用于清理副作用（如取消订阅、清除定时器等）
+      // 这里只是演示，实际不应该在清理函数中更新状态
+      console.log('组件卸载了')
     }
   }, [])
 
@@ -177,7 +176,7 @@ const UseEffectExample = () => {
 // ========== 示例 3: useRef - 引用 DOM 或保存值 ==========
 const UseRefExample = () => {
   const [count, setCount] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null) // 引用 DOM 元素
+  const inputRef = useRef<InputRef>(null) // 引用 Ant Design Input 组件
   const prevCountRef = useRef<number>(0) // 保存上一次的值（不触发重新渲染）
 
   // 当 count 变化时，保存上一次的值
