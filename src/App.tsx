@@ -11,12 +11,14 @@ import {
   BookOutlined,
   ThunderboltOutlined,
   CodeOutlined,
+  CalculatorOutlined,
 } from '@ant-design/icons'
 import CoreExample from './components/CoreExample'
 import ReactiveExample from './components/ReactiveExample'
 import ReactExample from './components/ReactExample'
 import ReactHooksExample from './components/ReactHooksExample'
 import CustomHooksExample from './components/CustomHooksExample'
+import DecimalExample from './components/DecimalExample'
 import BasicForm from './components/BasicForm'
 import AdvancedForm from './components/AdvancedForm'
 import ArrayForm from './components/ArrayForm'
@@ -34,6 +36,7 @@ type PageKey =
   | 'react'
   | 'hooks'
   | 'customHooks'
+  | 'decimal'
   | 'basic' 
   | 'advanced' 
   | 'array' 
@@ -48,6 +51,7 @@ const pageComponents: Record<PageKey, React.ReactNode> = {
   react: <ReactExample />,
   hooks: <ReactHooksExample />,
   customHooks: <CustomHooksExample />,
+  decimal: <DecimalExample />,
   basic: <BasicForm />,
   advanced: <AdvancedForm />,
   array: <ArrayForm />,
@@ -82,6 +86,11 @@ const menuItems = [
     key: 'customHooks',
     icon: <CodeOutlined />,
     label: '自定义 Hooks 示例',
+  },
+  {
+    key: 'decimal',
+    icon: <CalculatorOutlined />,
+    label: 'Decimal.js 示例',
   },
   {
     type: 'divider' as const,
