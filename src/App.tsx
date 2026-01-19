@@ -63,78 +63,90 @@ const pageComponents: Record<PageKey, React.ReactNode> = {
 
 const menuItems = [
   {
-    key: 'core',
+    key: 'learn',
     icon: <BookOutlined />,
-    label: 'Core 学习示例',
+    label: '学习示例',
+    children: [
+      {
+        key: 'core',
+        icon: <BookOutlined />,
+        label: 'Core 学习示例',
+      },
+      {
+        key: 'reactive',
+        icon: <ThunderboltOutlined />,
+        label: 'Reactive 学习示例',
+      },
+      {
+        key: 'react',
+        icon: <CodeOutlined />,
+        label: 'React 学习示例',
+      },
+      {
+        key: 'hooks',
+        icon: <CodeOutlined />,
+        label: 'React Hooks 示例',
+      },
+      {
+        key: 'customHooks',
+        icon: <CodeOutlined />,
+        label: '自定义 Hooks 示例',
+      },
+      {
+        key: 'decimal',
+        icon: <CalculatorOutlined />,
+        label: 'Decimal.js 示例',
+      },
+    ],
   },
   {
-    key: 'reactive',
-    icon: <ThunderboltOutlined />,
-    label: 'Reactive 学习示例',
-  },
-  {
-    key: 'react',
-    icon: <CodeOutlined />,
-    label: 'React 学习示例',
-  },
-  {
-    key: 'hooks',
-    icon: <CodeOutlined />,
-    label: 'React Hooks 示例',
-  },
-  {
-    key: 'customHooks',
-    icon: <CodeOutlined />,
-    label: '自定义 Hooks 示例',
-  },
-  {
-    key: 'decimal',
-    icon: <CalculatorOutlined />,
-    label: 'Decimal.js 示例',
-  },
-  {
-    type: 'divider' as const,
-  },
-  {
-    key: 'basic',
+    key: 'forms',
     icon: <FormOutlined />,
-    label: '基础表单',
+    label: '表单示例',
+    children: [
+      {
+        key: 'basic',
+        icon: <FormOutlined />,
+        label: '基础表单',
+      },
+      {
+        key: 'advanced',
+        icon: <SettingOutlined />,
+        label: '高级表单',
+      },
+      {
+        key: 'array',
+        icon: <TableOutlined />,
+        label: '数组表单',
+      },
+      {
+        key: 'validation',
+        icon: <SafetyCertificateOutlined />,
+        label: '表单验证',
+      },
+      {
+        key: 'async',
+        icon: <ApiOutlined />,
+        label: '异步操作',
+      },
+      {
+        key: 'customComponent',
+        icon: <BulbOutlined />,
+        label: '自定义组件',
+      },
+    ],
   },
   {
-    key: 'advanced',
-    icon: <SettingOutlined />,
-    label: '高级表单',
-  },
-  {
-    key: 'array',
-    icon: <TableOutlined />,
-    label: '数组表单',
-  },
-  {
-    type: 'divider' as const,
-  },
-  {
-    key: 'validation',
-    icon: <SafetyCertificateOutlined />,
-    label: '表单验证',
-  },
-  {
-    key: 'async',
-    icon: <ApiOutlined />,
-    label: '异步操作',
-  },
-  {
-    key: 'customComponent',
-    icon: <BulbOutlined />,
-    label: '自定义组件',
-  },
-  {
-    type: 'divider' as const,
-  },
-  {
-    key: 'realworld',
+    key: 'biz',
     icon: <ShoppingCartOutlined />,
-    label: '电商订单',
+    label: '业务示例',
+    children: [
+      {
+        key: 'realworld',
+        icon: <ShoppingCartOutlined />,
+        label: '电商订单',
+      },
+    ],
   },
 ]
 
