@@ -19,6 +19,7 @@ import ReactExample from './components/ReactExample'
 import ReactHooksExample from './components/ReactHooksExample'
 import CustomHooksExample from './components/CustomHooksExample'
 import DecimalExample from './components/DecimalExample'
+import CustomAdapterExample from './components/CustomAdapterExample'
 import BasicForm from './components/BasicForm'
 import AdvancedForm from './components/AdvancedForm'
 import ArrayForm from './components/ArrayForm'
@@ -37,6 +38,7 @@ type PageKey =
   | 'hooks'
   | 'customHooks'
   | 'decimal'
+  | 'customAdapter'
   | 'basic' 
   | 'advanced' 
   | 'array' 
@@ -52,6 +54,7 @@ const pageComponents: Record<PageKey, React.ReactNode> = {
   hooks: <ReactHooksExample />,
   customHooks: <CustomHooksExample />,
   decimal: <DecimalExample />,
+  customAdapter: <CustomAdapterExample />,
   basic: <BasicForm />,
   advanced: <AdvancedForm />,
   array: <ArrayForm />,
@@ -96,6 +99,11 @@ const menuItems = [
         key: 'decimal',
         icon: <CalculatorOutlined />,
         label: 'Decimal.js 示例',
+      },
+      {
+        key: 'customAdapter',
+        icon: <CodeOutlined />,
+        label: '自定义适配器示例',
       },
     ],
   },
