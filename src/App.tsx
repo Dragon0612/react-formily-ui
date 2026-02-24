@@ -10,6 +10,7 @@ import {
   ShoppingCartOutlined,
   BookOutlined,
   ThunderboltOutlined,
+  ExperimentOutlined,
   CodeOutlined,
   CalculatorOutlined,
 } from '@ant-design/icons'
@@ -27,12 +28,13 @@ import ValidationForm from './components/ValidationForm'
 import AsyncForm from './components/AsyncForm'
 import CustomComponentForm from './components/CustomComponentForm'
 import RealWorldForm from './components/RealWorldForm'
-
+import PluginLearning from './pages/pluginLearn/lodash'
 const { Header, Content, Sider } = Layout
 const { Title } = Typography
 
 type PageKey = 
   | 'core'
+  | 'lodash'
   | 'reactive'
   | 'react'
   | 'hooks'
@@ -48,6 +50,7 @@ type PageKey =
   | 'realworld'
 
 const pageComponents: Record<PageKey, React.ReactNode> = {
+  lodash: <PluginLearning />,
   core: <CoreExample />,
   reactive: <ReactiveExample />,
   react: <ReactExample />,
@@ -104,6 +107,18 @@ const menuItems = [
         key: 'customAdapter',
         icon: <CodeOutlined />,
         label: '自定义适配器示例',
+      },
+    ],
+  },
+  {
+    key: 'plugin',
+    icon: <ExperimentOutlined />,
+    label: '插件学习',
+    children: [
+      {
+        key: 'lodash',
+        icon: <ExperimentOutlined />,
+        label: 'Lodash学习',
       },
     ],
   },
