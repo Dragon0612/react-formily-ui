@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Card, Space, Button, Input, Tag, Divider, Alert, Collapse, message, Segmented, Dropdown, Typography } from 'antd'
 // 引入 lodash 的常用函数，结合 chain 形成“管道式”数据处理
-import { chain, sumBy, orderBy, flatMap, thru, pick, omit, union, intersection, get, set, cloneDeep, merge, chunk, compact, flattenDepth, keyBy, partition, pickBy, omitBy, isEqual, camelCase, kebabCase, startCase, padStart, truncate, uniqBy, difference, xor, countBy, maxBy, minBy, mapValues, defaultsDeep, flow, flowRight, curry, partial, memoize, once, range, times, zip, unzip, shuffle, sample, groupBy, zipObject, zipObjectDeep, fromPairs, debounce, throttle, differenceBy, intersectionBy, uniqWith, differenceWith, intersectionWith } from 'lodash'
+import { chain, sumBy, orderBy, flatMap, thru, pick, omit, union, intersection, get, set, cloneDeep, merge, chunk, compact, flattenDepth, keyBy, partition, pickBy, omitBy, isEqual, camelCase, kebabCase, startCase, padStart, truncate, uniqBy, difference, xor, countBy, maxBy, minBy, mapValues, mapKeys, defaultsDeep, flow, flowRight, curry, partial, memoize, once, range, times, zip, unzip, shuffle, sample, sampleSize, groupBy, zipObject, zipObjectDeep, fromPairs, debounce, throttle, differenceBy, intersectionBy, uniqWith, differenceWith, intersectionWith, clamp, inRange } from 'lodash'
 import { SortAscendingOutlined, PartitionOutlined, AppstoreOutlined, SearchOutlined, CopyOutlined } from '@ant-design/icons'
 
 export default function LodashLearning () {
@@ -98,6 +98,19 @@ export default function LodashLearning () {
   const [deepUpdateResult, setDeepUpdateResult] = useState<Record<string, unknown> | null>(null)
   const [debouncedMaxCount, setDebouncedMaxCount] = useState(0)
   const [debounceMaxInput, setDebounceMaxInput] = useState('')
+  const [withOpsAdvancedResult, setWithOpsAdvancedResult] = useState<{ diff: string[]; intersect: string[] } | null>(null)
+  const [flowVsResult, setFlowVsResult] = useState<{ leftToRight: number; rightToLeft: number } | null>(null)
+  const [debLeadCount, setDebLeadCount] = useState(0)
+  const [debTrailCount, setDebTrailCount] = useState(0)
+  const [deepBatchResult, setDeepBatchResult] = useState<{ obj: Record<string, unknown>; updatedKeys: number } | null>(null)
+  const [sampleSizeResult, setSampleSizeResult] = useState<Array<string | number>>([])
+  const [clampRangeResult, setClampRangeResult] = useState<{ clamp: number; inRangeA: boolean; inRangeB: boolean } | null>(null)
+  const [mapKeysResult, setMapKeysResult] = useState<Record<string, number> | null>(null)
+  const [sortStabilityResult, setSortStabilityResult] = useState<string[] | null>(null)
+  const [uniqPerfResult, setUniqPerfResult] = useState<{ prims: { count: number; ms: number }; objs: { count: number; ms: number }; deep: { count: number; ms: number } } | null>(null)
+  const [sortCompareResult, setSortCompareResult] = useState<{ sortByAsc: string[]; orderByDesc: string[] } | null>(null)
+  const [uniqCompareResult, setUniqCompareResult] = useState<{ prims: number; objs: number; deep: number } | null>(null)
+  const [pickOmitPatternsResult, setPickOmitPatternsResult] = useState<{ afterPick: string[]; afterOmit: string[] } | null>(null)
 
   const renderPipeline = (steps: string[]) => (
     <Space wrap>
@@ -521,6 +534,34 @@ function nextPage() {
   const throttledTrailingFalse = throttle(() => setThrTrailingFalseCount(c => c + 1), 1000, { leading: true, trailing: false })
   // 可调用 throttledLeadingFalse.cancel() / throttledTrailingFalse.cancel() 取消排队的调用
 }`
+  const codeWithOpsAdvanced = `function runWithOpsAdvanced() {
+  const l1 = [{ name: 'Alice', role: 'admin' }, { name: 'Bob', role: 'editor' }, { name: 'Eva', role: 'editor' }]
+  const l2 = [{ name: 'bob', role: 'editor' }, { name: 'David', role: 'viewer' }]
+  const cmp = (a, b) => a.role === b.role && a.name.toLowerCase() === b.name.toLowerCase()
+  const diff = differenceWith(l1, l2, cmp).map(x => \`\${x.name}:\${x.role}\`)
+  const intersect = intersectionWith(l1, l2, cmp).map(x => \`\${x.name}:\${x.role}\`)
+  setWithOpsAdvancedResult({ diff, intersect })
+}`
+  const codeFlowVs = `function runFlowVs() {
+  const inc = (n) => n + 1
+  const double = (n) => n * 2
+  const square = (n) => n * n
+  const left = flow([inc, double, square])(3)
+  const right = flowRight([square, double, inc])(3)
+  setFlowVsResult({ leftToRight: left, rightToLeft: right })
+}`
+  const codeDeepBatchUpdate = `function runDeepBatchUpdate() {
+  const keys = ['cfg.ui.theme', 'cfg.ui.locale.lang', 'cfg.features.a', 'cfg.features.b']
+  const values = ['light', 'en', true, false]
+  const obj = zipObjectDeep(keys, values)
+  const updates = [['cfg.ui.theme','dark'], ['cfg.ui.locale.lang','zh-CN'], ['cfg.features.b', true]]
+  updates.forEach(([k, v]) => set(obj, k, v))
+  setDeepBatchResult({ obj, updatedKeys: updates.length })
+}`
+  const codeDebounceOptions = `function debounceOptionsSetup() {
+  const debouncedLeadingTrue = debounce(() => setDebLeadCount(c => c + 1), 300, { leading: true, trailing: false })
+  const debouncedTrailingTrue = debounce(() => setDebTrailCount(c => c + 1), 300, { leading: false, trailing: true })
+}`
   const codeWithOps = `function runWithOps() {
   const l1 = [{ id: 1 }, { id: 2 }, { id: 3 }]
   const l2 = [{ id: 2 }, { id: 4 }]
@@ -548,6 +589,73 @@ function nextPage() {
   const codeDebounceMaxWait = `function debounceMaxWaitSetup() {
   const debounced = debounce(() => setDebouncedMaxCount(c => c + 1), 300, { maxWait: 1000 })
   // 高频输入时，至少每 1000ms 会强制触发一次
+}`
+  const codeSampleSize = `function runSampleSize() {
+  const list = ['a', 'b', 'c', 'd', 'e', 1, 2, 3]
+  const res = sampleSize(list, 4)
+  setSampleSizeResult(res)
+}`
+  const codeClampInRange = `function runClampInRange() {
+  const c = clamp(15, 0, 10)
+  const a = inRange(3, 0, 5)
+  const b = inRange(7, 0, 5)
+  setClampRangeResult({ clamp: c, inRangeA: a, inRangeB: b })
+}`
+  const codeMapKeys = `function runMapKeys() {
+  const obj = { a: 1, b: 2, c: 3 }
+  const mapped = mapKeys(obj, (v, k) => 'key_' + k.toUpperCase())
+  setMapKeysResult(mapped)
+}`
+  const codePickOmitPatterns = `function runPickOmitPatterns() {
+  const u = { id: 1, name: 'Alice', role: 'admin', age: 28, active: true, token: 'secret' }
+  const afterPick = Object.keys(pick(u, ['id', 'name', 'role', 'active']))
+  const afterOmit = Object.keys(omit(u, ['token', 'age']))
+  setPickOmitPatternsResult({ afterPick, afterOmit })
+}`
+  const codeUniqCompare = `function runUniqCompare() {
+  const prims = chain([1,1,2,3,3,4]).uniq().value().length
+  const objs = uniqBy([{id:1},{id:2},{id:1},{id:3}], 'id').length
+  const deep = uniqWith([{a:{x:1}}, {a:{x:1}}, {a:{x:2}}], isEqual).length
+  setUniqCompareResult({ prims, objs, deep })
+}`
+  const codeSortCompare = `function runSortCompare() {
+  const list = [
+    { name: 'alice', score: 70 },
+    { name: 'bob', score: 85 },
+    { name: 'charlie', score: 78 },
+    { name: 'david', score: 85 },
+  ]
+  const asc = chain(list).sortBy('score').map(x => x.name).value()
+  const desc = chain(list).thru(arr => orderBy(arr, ['score', 'name'], ['desc', 'asc'])).map(x => x.name).value()
+  setSortCompareResult({ sortByAsc: asc, orderByDesc: desc })
+}`
+  const codeSortStability = `function runSortStability() {
+  const list = [
+    { name: 'alice', score: 85 },
+    { name: 'bob', score: 85 },
+    { name: 'charlie', score: 78 },
+    { name: 'david', score: 85 },
+  ]
+  const ordered = chain(list).thru(arr => orderBy(arr, ['score', 'name'], ['asc', 'asc'])).map(x => x.name).value()
+  setSortStabilityResult(ordered)
+}`
+  const codeUniqPerf = `function runUniqPerf() {
+  const N = 5000
+  const primsList = Array.from({ length: N }, (_, i) => i % 100)
+  const objsList = Array.from({ length: N }, (_, i) => ({ id: i % 100, v: i }))
+  const deepList = Array.from({ length: N }, (_, i) => ({ a: { x: i % 100 } }))
+  const t1 = performance.now()
+  const primsRes = chain(primsList).uniq().value().length
+  const t2 = performance.now()
+  const objsRes = uniqBy(objsList, 'id').length
+  const t3 = performance.now()
+  const deepRes = uniqWith(deepList, isEqual).length
+  const t4 = performance.now()
+  setUniqPerfResult({
+    prims: { count: primsRes, ms: Number((t2 - t1).toFixed(1)) },
+    objs: { count: objsRes, ms: Number((t3 - t2).toFixed(1)) },
+    deep: { count: deepRes, ms: Number((t4 - t3).toFixed(1)) },
+  })
 }`
   const copyAllCodes = async () => {
     const all = [
@@ -583,6 +691,18 @@ function nextPage() {
       codeUniqWith,
       codeZipObjectDeep,
       codeThrottleOptionsCancel,
+      codeWithOpsAdvanced,
+      codeFlowVs,
+      codeDeepBatchUpdate,
+      codeDebounceOptions,
+      codeSampleSize,
+      codeClampInRange,
+      codeMapKeys,
+      codePickOmitPatterns,
+      codeUniqCompare,
+      codeSortCompare,
+      codeSortStability,
+      codeUniqPerf,
     ].join('\n\n')
     try {
       await navigator.clipboard.writeText(all)
@@ -607,6 +727,18 @@ function nextPage() {
     对象集合运算: [codeDifferenceIntersectionBy, codeUniqWith],
     深层键: [codeZipObjectDeep],
     事件控制进阶: [codeThrottleOptionsCancel],
+    比较器进阶: [codeWithOpsAdvanced],
+    函数组合对比: [codeFlowVs],
+    深层批量更新: [codeDeepBatchUpdate],
+    防抖选项: [codeDebounceOptions],
+    数值与范围: [codeClampInRange],
+    键变换: [codeMapKeys],
+    随机增强: [codeSampleSize],
+    选择剔除实践: [codePickOmitPatterns],
+    去重对比: [codeUniqCompare],
+    排序对比: [codeSortCompare],
+    排序稳定性: [codeSortStability],
+    去重性能对比: [codeUniqPerf],
   }
 
   const copyCategory = async (name: keyof typeof codesByCategory) => {
@@ -647,6 +779,18 @@ function nextPage() {
     { key: '对象集合运算', label: '复制对象集合运算代码', icon: <AppstoreOutlined /> },
     { key: '深层键', label: '复制深层键代码', icon: <AppstoreOutlined /> },
     { key: '事件控制进阶', label: '复制事件控制进阶代码', icon: <AppstoreOutlined /> },
+    { key: '比较器进阶', label: '复制比较器进阶代码', icon: <AppstoreOutlined /> },
+    { key: '函数组合对比', label: '复制函数组合对比代码', icon: <AppstoreOutlined /> },
+    { key: '深层批量更新', label: '复制深层批量更新代码', icon: <AppstoreOutlined /> },
+    { key: '防抖选项', label: '复制防抖选项代码', icon: <AppstoreOutlined /> },
+    { key: '数值与范围', label: '复制数值与范围代码', icon: <AppstoreOutlined /> },
+    { key: '键变换', label: '复制键变换代码', icon: <AppstoreOutlined /> },
+    { key: '随机增强', label: '复制随机增强代码', icon: <AppstoreOutlined /> },
+    { key: '选择剔除实践', label: '复制选择剔除实践代码', icon: <AppstoreOutlined /> },
+    { key: '去重对比', label: '复制去重对比代码', icon: <AppstoreOutlined /> },
+    { key: '排序对比', label: '复制排序对比代码', icon: <AppstoreOutlined /> },
+    { key: '排序稳定性', label: '复制排序稳定性代码', icon: <AppstoreOutlined /> },
+    { key: '去重性能对比', label: '复制去重性能对比代码', icon: <AppstoreOutlined /> },
   ]
 
   useEffect(() => {
@@ -947,6 +1091,45 @@ function nextPage() {
     () => debounce(() => setDebouncedMaxCount((c) => c + 1), 300, { maxWait: 1000 }),
     []
   )
+  const runWithOpsAdvanced = () => {
+    const l1 = [{ name: 'Alice', role: 'admin' }, { name: 'Bob', role: 'editor' }, { name: 'Eva', role: 'editor' }]
+    const l2 = [{ name: 'bob', role: 'editor' }, { name: 'David', role: 'viewer' }]
+    const cmp = (a: { name: string; role: string }, b: { name: string; role: string }) =>
+      a.role === b.role && a.name.toLowerCase() === b.name.toLowerCase()
+    const diff = differenceWith(l1, l2, cmp).map(x => `${x.name}:${x.role}`)
+    const intersect = intersectionWith(l1, l2, cmp).map(x => `${x.name}:${x.role}`)
+    setWithOpsAdvancedResult({ diff, intersect })
+  }
+
+  const runFlowVs = () => {
+    const inc = (n: number) => n + 1
+    const double = (n: number) => n * 2
+    const square = (n: number) => n * n
+    const left = flow([inc, double, square])(3)
+    const right = flowRight([square, double, inc])(3)
+    setFlowVsResult({ leftToRight: left, rightToLeft: right })
+  }
+
+  const runDeepBatchUpdate = () => {
+    const keys = ['cfg.ui.theme', 'cfg.ui.locale.lang', 'cfg.features.a', 'cfg.features.b']
+    const values = ['light', 'en', true, false]
+    const obj = zipObjectDeep(keys, values) as Record<string, unknown>
+    const updates: Array<[string, unknown]> = [
+      ['cfg.ui.theme', 'dark'],
+      ['cfg.ui.locale.lang', 'zh-CN'],
+      ['cfg.features.b', true],
+    ]
+    updates.forEach(([k, v]) => set(obj, k, v))
+    setDeepBatchResult({ obj, updatedKeys: updates.length })
+  }
+  const debouncedLeadingTrue = useMemo(
+    () => debounce(() => setDebLeadCount((c) => c + 1), 300, { leading: true, trailing: false }),
+    []
+  )
+  const debouncedTrailingTrue = useMemo(
+    () => debounce(() => setDebTrailCount((c) => c + 1), 300, { leading: false, trailing: true }),
+    []
+  )
 
   return (
     <Card title="Lodash - chain 学习案例" type="inner">
@@ -1098,6 +1281,60 @@ function nextPage() {
                   </Tag>
                 ))
               )}
+            </Space>
+          </Space>
+        </Card>
+
+        <Card title="排序对比：sortBy vs orderBy" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const list = [
+                { name: 'alice', score: 70 },
+                { name: 'bob', score: 85 },
+                { name: 'charlie', score: 78 },
+                { name: 'david', score: 85 },
+              ]
+              const asc = chain(list).sortBy('score').map(x => x.name).value()
+              const desc = chain(list).thru(arr => orderBy(arr, ['score', 'name'], ['desc', 'asc'])).map(x => x.name).value()
+              setSortCompareResult({ sortByAsc: asc, orderByDesc: desc })
+            }}>运行示例</Button>
+            {renderInfo(
+              ['sortBy(score) → 默认升序', 'orderBy(score desc, name asc)'],
+              ['orderBy 可指定方向与多字段', 'sortBy 需要 reverse 实现降序'],
+              "const asc=chain(list).sortBy('score').value(); const desc=orderBy(list,['score','name'],['desc','asc'])",
+              codeSortCompare
+            )}
+            <Space wrap>
+              {sortCompareResult ? (
+                <>
+                  <Tag color="blue">sortBy(asc): {sortCompareResult.sortByAsc.join(' → ')}</Tag>
+                  <Tag color="geekblue">orderBy(desc): {sortCompareResult.orderByDesc.join(' → ')}</Tag>
+                </>
+              ) : <Tag color="default">暂无结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
+
+        <Card title="排序稳定性：相同分数按姓名次序" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const list = [
+                { name: 'alice', score: 85 },
+                { name: 'bob', score: 85 },
+                { name: 'charlie', score: 78 },
+                { name: 'david', score: 85 },
+              ]
+              const ordered = chain(list).thru(arr => orderBy(arr, ['score', 'name'], ['asc', 'asc'])).map(x => x.name).value()
+              setSortStabilityResult(ordered)
+            }}>运行示例</Button>
+            {renderInfo(
+              ['orderBy(score asc, name asc)'],
+              ['为相同分数提供稳定次序'],
+              "orderBy(list,['score','name'],['asc','asc'])",
+              codeSortStability
+            )}
+            <Space wrap>
+              {sortStabilityResult ? sortStabilityResult.map((n, i) => <Tag key={`st-${i}`}>{n}</Tag>) : <Tag color="default">暂无结果</Tag>}
             </Space>
           </Space>
         </Card>
@@ -1593,6 +1830,69 @@ function nextPage() {
           </Space>
         </Card>
 
+        <Card title="去重对比：uniq/uniqBy/uniqWith" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const prims = chain([1,1,2,3,3,4]).uniq().value().length
+              const objs = uniqBy([{id:1},{id:2},{id:1},{id:3}], 'id').length
+              const deep = uniqWith([{a:{x:1}}, {a:{x:1}}, {a:{x:2}}], isEqual).length
+              setUniqCompareResult({ prims, objs, deep })
+            }}>运行示例</Button>
+            {renderInfo(
+              ['uniq(原始值)', 'uniqBy(对象按键)', 'uniqWith(深比较)'],
+              ['不同数据形态选择不同方法', '深比较成本较高仅在必要时使用'],
+              "uniq([1,1,2]); uniqBy(list,'id'); uniqWith(list,isEqual)",
+              codeUniqCompare
+            )}
+            <Space wrap>
+              {uniqCompareResult ? (
+                <>
+                  <Tag color="blue">prims 去重后: {uniqCompareResult.prims}</Tag>
+                  <Tag color="geekblue">objs 去重后: {uniqCompareResult.objs}</Tag>
+                  <Tag color="purple">deep 去重后: {uniqCompareResult.deep}</Tag>
+                </>
+              ) : <Tag color="default">暂无结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
+
+        <Card title="去重性能对比：原始值/对象/深比较" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const N = 5000
+              const primsList = Array.from({ length: N }, (_, i) => i % 100)
+              const objsList = Array.from({ length: N }, (_, i) => ({ id: i % 100, v: i }))
+              const deepList = Array.from({ length: N }, (_, i) => ({ a: { x: i % 100 } }))
+              const t1 = performance.now()
+              const primsRes = chain(primsList).uniq().value().length
+              const t2 = performance.now()
+              const objsRes = uniqBy(objsList, 'id').length
+              const t3 = performance.now()
+              const deepRes = uniqWith(deepList, isEqual).length
+              const t4 = performance.now()
+              setUniqPerfResult({
+                prims: { count: primsRes, ms: Number((t2 - t1).toFixed(1)) },
+                objs: { count: objsRes, ms: Number((t3 - t2).toFixed(1)) },
+                deep: { count: deepRes, ms: Number((t4 - t3).toFixed(1)) },
+              })
+            }}>运行示例</Button>
+            {renderInfo(
+              ['uniq(原始值)', 'uniqBy(对象按键)', 'uniqWith(深比较)'],
+              ['深比较通常最慢', '对象按键次之，原始值最快'],
+              "测量性能.now() 统计三种去重耗时",
+              codeUniqPerf
+            )}
+            <Space wrap>
+              {uniqPerfResult ? (
+                <>
+                  <Tag color="blue">prims: {uniqPerfResult.prims.count} 项 | {uniqPerfResult.prims.ms}ms</Tag>
+                  <Tag color="geekblue">objs: {uniqPerfResult.objs.count} 项 | {uniqPerfResult.objs.ms}ms</Tag>
+                  <Tag color="purple">deep: {uniqPerfResult.deep.count} 项 | {uniqPerfResult.deep.ms}ms</Tag>
+                </>
+              ) : <Tag color="default">暂无结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
         <Card title="对象集合运算：differenceBy/intersectionBy/uniqWith" size="small">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Space>
@@ -1625,6 +1925,31 @@ function nextPage() {
               {uniqWithResult ? (
                 <Tag color="green">uniqWith: {uniqWithResult.before} → {uniqWithResult.after}</Tag>
               ) : <Tag color="default">暂无去重结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
+
+        <Card title="选择剔除实践：pick/omit 模式" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const u = { id: 1, name: 'Alice', role: 'admin', age: 28, active: true, token: 'secret' }
+              const afterPick = Object.keys(pick(u, ['id', 'name', 'role', 'active']))
+              const afterOmit = Object.keys(omit(u, ['token', 'age']))
+              setPickOmitPatternsResult({ afterPick, afterOmit })
+            }}>运行示例</Button>
+            {renderInfo(
+              ['pick(先挑核心字段)', 'omit(剔除敏感/不必要字段)'],
+              ['挑选靠前减少对象负担', '剔除尽量早进行降低传递成本'],
+              "Object.keys(pick(u,['id','name','role','active'])); Object.keys(omit(u,['token','age']))",
+              codePickOmitPatterns
+            )}
+            <Space wrap>
+              {pickOmitPatternsResult ? (
+                <>
+                  <Tag color="green">pick 后字段: {pickOmitPatternsResult.afterPick.join(', ')}</Tag>
+                  <Tag color="volcano">omit 后字段: {pickOmitPatternsResult.afterOmit.join(', ')}</Tag>
+                </>
+              ) : <Tag color="default">暂无结果</Tag>}
             </Space>
           </Space>
         </Card>
@@ -1709,6 +2034,32 @@ function nextPage() {
           </Space>
         </Card>
 
+        <Card title="数值与范围：clamp/inRange" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const c = clamp(15, 0, 10)
+              const a = inRange(3, 0, 5)
+              const b = inRange(7, 0, 5)
+              setClampRangeResult({ clamp: c, inRangeA: a, inRangeB: b })
+            }}>运行示例</Button>
+            {renderInfo(
+              ['clamp(限制范围)', 'inRange(是否在范围内)'],
+              ['限制数值上下限', '校验数值是否落在区间'],
+              "clamp(15,0,10); inRange(3,0,5)",
+              codeClampInRange
+            )}
+            <Space wrap>
+              {clampRangeResult ? (
+                <>
+                  <Tag color="magenta">clamp: {clampRangeResult.clamp}</Tag>
+                  <Tag color="green">inRange(3,0,5): {String(clampRangeResult.inRangeA)}</Tag>
+                  <Tag color="volcano">inRange(7,0,5): {String(clampRangeResult.inRangeB)}</Tag>
+                </>
+              ) : <Tag color="default">暂无结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
+
         <Card title="对象操作：mapValues/defaultsDeep" size="small">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Button type="primary" onClick={() => {
@@ -1732,6 +2083,27 @@ function nextPage() {
                   <Tag color="cyan">主题 {objectOps.withDefaults.ui.theme}</Tag>
                   <Tag color="geekblue">语言 {objectOps.withDefaults.ui.lang}</Tag>
                 </>
+              ) : <Tag color="default">暂无结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
+
+        <Card title="键变换：mapKeys" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const obj = { a: 1, b: 2, c: 3 }
+              const mapped = mapKeys(obj, (v, k) => 'key_' + k.toUpperCase())
+              setMapKeysResult(mapped as Record<string, number>)
+            }}>运行示例</Button>
+            {renderInfo(
+              ['mapKeys(按规则转换键名)'],
+              ['用于统一键名风格或添加前缀'],
+              "mapKeys(obj,(v,k)=>'key_'+k.toUpperCase())",
+              codeMapKeys
+            )}
+            <Space wrap>
+              {mapKeysResult ? (
+                Object.entries(mapKeysResult).map(([k,v]) => <Tag key={`mk-${k}`}>{k}:{String(v)}</Tag>)
               ) : <Tag color="default">暂无结果</Tag>}
             </Space>
           </Space>
@@ -1789,6 +2161,25 @@ function nextPage() {
                   {randomResult.shuffled.map((v, i) => <Tag key={`sh-${i}`}>{String(v)}</Tag>)}
                 </>
               ) : <Tag color="default">暂无结果</Tag>}
+            </Space>
+          </Space>
+        </Card>
+
+        <Card title="随机增强：sampleSize" size="small">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button type="primary" onClick={() => {
+              const list = ['a', 'b', 'c', 'd', 'e', 1, 2, 3]
+              const res = sampleSize(list, 4)
+              setSampleSizeResult(res)
+            }}>运行示例</Button>
+            {renderInfo(
+              ['sampleSize(随机抽N个)'],
+              ['用于从集合中随机抽取多个样本'],
+              "sampleSize(list,4)",
+              codeSampleSize
+            )}
+            <Space wrap>
+              {sampleSizeResult.length ? sampleSizeResult.map((v, i) => <Tag key={`ss-${i}`}>{String(v)}</Tag>) : <Tag color="default">暂无结果</Tag>}
             </Space>
           </Space>
         </Card>
