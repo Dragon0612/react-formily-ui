@@ -274,6 +274,78 @@ curl -H "Accept-Encoding: gzip" -I http://localhost/static/app.js
 curl -I http://api.local/api/users
 `.trim()
 
+const codeCorsPreflight = `
+curl -X OPTIONS \\
+  -H "Origin: https://foo.example" \\
+  -H "Access-Control-Request-Method: GET" \\
+  -H "Access-Control-Request-Headers: Authorization" \\
+  http://cors.local/api/
+`.trim()
+
+const codeWscat = `
+wscat -c ws://ws.local/ws/
+`.trim()
+
+const codeViteProxy = `
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:4000',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\\/api/, ''),
+      },
+      '/ws': {
+        target: 'ws://127.0.0.1:3002',
+        ws: true,
+      },
+    },
+  },
+})
+`.trim()
+
+const codeViteBase = `
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  base: '/app/',
+})
+`.trim()
+
+const codeNginxProdMatch = `
+server {
+  listen 80;
+  server_name app.local;
+  # 静态资源按 base '/app/' 部署
+  location /app/ {
+    root /var/www/site;    # 实际路径拼为 /var/www/site/app/index.html
+    try_files $uri $uri/ /app/index.html;
+  }
+  # REST 接口与本地 /api 代理保持一致
+  location /api/ {
+    proxy_pass http://127.0.0.1:4000/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+  # WebSocket 与本地 /ws 对齐
+  location /ws/ {
+    proxy_pass http://127.0.0.1:3002/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+}
+`.trim()
+
 function copy(text: string) {
   return async () => {
     try {
@@ -493,6 +565,96 @@ export default function NginxLearn() {
         ]}
       />
 
+      <Card title="前端要点速查">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Paragraph>
+            <Text strong>路由与部署路径：</Text> History 路由需 try_files 回退到 index.html；生产与构建 base 保持一致。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>反向代理与跨域：</Text> 开发用本地代理，线上 Nginx 反代；预检 OPTIONS 与 Access-Control-Allow-* 头匹配；鉴权头与 Cookie 需透传。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>WebSocket 与 SSE：</Text> 设置 Upgrade/Connection；前端统一 ws(s) 地址与路径。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>静态资源与缓存：</Text> 文件名指纹配合长缓存；HTML 短缓存；SourceMap 谨慎发布。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>压缩与体积：</Text> 开启 gzip 或 brotli；前端代码分割、按需加载、资源优化。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>安全：</Text> 配置 CSP、X-Frame-Options、X-Content-Type-Options、Referrer-Policy；前端按 CSP 白名单接入第三方。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>缓存与 CDN：</Text> 细化 proxy_cache_key；对用户态或强一致接口跳过缓存。
+          </Paragraph>
+          <Paragraph>
+            <Text strong>错误与限流：</Text> 针对 502/504/429 建立重试与友好提示；合理退避。
+          </Paragraph>
+          <Collapse
+            items={[
+              {
+                key: 'cors-preflight',
+                label: 'CORS 预检命令',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeCorsPreflight)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeCorsPreflight}</code></pre>
+                  </Card>
+                ),
+              },
+              {
+                key: 'wscat',
+                label: 'WebSocket 连接测试',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeWscat)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeWscat}</code></pre>
+                  </Card>
+                ),
+              },
+            ]}
+          />
+        </Space>
+      </Card>
+
+      <Divider />
+      <Card title="Vite 本地代理 ↔ 生产 Nginx 对应">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Paragraph>
+            <Tag color="processing">目标</Tag> 开发与生产保持路径与行为一致：<Text code>/api</Text>（REST）、<Text code>/ws</Text>（WebSocket）、<Text code>base</Text>（静态路径）。
+          </Paragraph>
+          <Collapse
+            items={[
+              {
+                key: 'vite-proxy',
+                label: 'Vite 本地代理配置',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeViteProxy)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeViteProxy}</code></pre>
+                  </Card>
+                ),
+              },
+              {
+                key: 'vite-base',
+                label: 'Vite base 与部署子路径',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeViteBase)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeViteBase}</code></pre>
+                  </Card>
+                ),
+              },
+              {
+                key: 'nginx-prod',
+                label: '生产 Nginx 对应配置',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeNginxProdMatch)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeNginxProdMatch}</code></pre>
+                  </Card>
+                ),
+              },
+            ]}
+          />
+        </Space>
+      </Card>
       <Divider />
       <Card title="常用验证命令" extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(curlSmoke)}>复制</Button>}>
         <Paragraph>
