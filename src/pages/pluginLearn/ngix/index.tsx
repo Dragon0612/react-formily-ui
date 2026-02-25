@@ -1,6 +1,6 @@
 import { Card, Typography, Collapse, Space, Button, message, Tag, Divider } from 'antd'
 import { CopyOutlined } from '@ant-design/icons'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -268,6 +268,43 @@ server {
 }
 `.trim()
 
+const codeHTTP2 = `
+server {
+  listen 443 ssl http2;
+  server_name h2.local;
+  ssl_certificate     /etc/nginx/certs/demo.crt;
+  ssl_certificate_key /etc/nginx/certs/demo.key;
+  location / {
+    root /var/www/site;
+    try_files $uri $uri/ /index.html;
+  }
+}
+`.trim()
+
+const codeBrotli = `
+http {
+  brotli on;
+  brotli_comp_level 5;
+  brotli_types text/plain text/css application/javascript application/json image/svg+xml;
+}
+`.trim()
+
+const codeCDN = `
+server {
+  listen 80;
+  server_name cdn.local;
+  location /assets/ {
+    root /var/www/site;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+  }
+  location / {
+    root /var/www/site;
+    add_header Cache-Control "no-cache";
+    try_files $uri $uri/ /index.html;
+  }
+}
+`.trim()
+
 const curlSmoke = `
 curl -I http://localhost
 curl -H "Accept-Encoding: gzip" -I http://localhost/static/app.js
@@ -284,6 +321,157 @@ curl -X OPTIONS \\
 
 const codeWscat = `
 wscat -c ws://ws.local/ws/
+`.trim()
+
+const codeFetchClient = `
+async function run() {
+  const r = await fetch('/api/users')
+  const data = await r.json()
+  console.log(data)
+}
+run()
+`.trim()
+
+const codeWsClient = `
+const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+const ws = new WebSocket(proto + '://' + location.host + '/ws')
+ws.onmessage = (e) => console.log(e.data)
+`.trim()
+
+const codeFetchAuthClient = `
+async function run() {
+  const r = await fetch('/api/users', {
+    credentials: 'include',
+    headers: {
+      'Authorization': 'Bearer <token>'
+    }
+  })
+  const data = await r.json()
+  console.log(data)
+}
+run()
+`.trim()
+
+const codeWsReconnect = `
+const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+let ws, timer, retry = 0
+const connect = () => {
+  ws = new WebSocket(proto + '://' + location.host + '/ws')
+  ws.onopen = () => {
+    retry = 0
+    timer = setInterval(() => {
+      if (ws.readyState === 1) ws.send('ping')
+    }, 5000)
+  }
+  ws.onmessage = (e) => console.log('msg', e.data)
+  ws.onclose = () => {
+    clearInterval(timer)
+    const delay = Math.min(30000, 1000 * (2 ** retry))
+    retry++
+    setTimeout(connect, delay)
+  }
+}
+connect()
+`.trim()
+
+const codeFetchRetryAuthTimeout = `
+async function fetchWithRetry(url, opts = {}, max = 3, timeoutMs = 8000) {
+  let n = 0
+  const backoff = (i) => new Promise(r => setTimeout(r, Math.min(2000, 200 * (2 ** i))))
+  while (true) {
+    const ctrl = new AbortController()
+    const to = setTimeout(() => ctrl.abort('timeout'), timeoutMs)
+    try {
+      const res = await fetch(url, { ...opts, signal: ctrl.signal })
+      clearTimeout(to)
+      if (res.status === 401) {
+        // TODO: 刷新 token 或跳转登录
+        throw new Error('Unauthorized')
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      return await res.json()
+    } catch (e) {
+      clearTimeout(to)
+      if (n++ >= max) throw e
+      await backoff(n)
+      continue
+    }
+  }
+}
+
+async function run() {
+  const data = await fetchWithRetry('/api/users', {
+    credentials: 'include',
+    headers: { Authorization: 'Bearer <token>' },
+  }, 3, 5000)
+  console.log(data)
+}
+run()
+`.trim()
+
+const codeWsReconnectLimited = `
+const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+let ws, timer, retry = 0, paused = false
+const MAX_RETRY = 5
+const connect = () => {
+  if (paused) return
+  ws = new WebSocket(proto + '://' + location.host + '/ws')
+  ws.onopen = () => {
+    retry = 0
+    timer = setInterval(() => {
+      if (ws.readyState === 1) ws.send('ping')
+    }, 5000)
+  }
+  ws.onmessage = (e) => console.log('msg', e.data)
+  ws.onclose = () => {
+    clearInterval(timer)
+    if (retry >= MAX_RETRY) return
+    const delay = Math.min(30000, 1000 * (2 ** retry))
+    retry++
+    setTimeout(connect, delay)
+  }
+}
+const pause = () => { paused = true; if (ws) ws.close() }
+const resume = () => { if (!paused) return; paused = false; connect() }
+connect()
+`.trim()
+
+const codeSetBaseWin = `
+set VITE_BASE=/app/
+npm run build
+`.trim()
+
+const codeSetBaseNix = `
+VITE_BASE=/app/ npm run build
+`.trim()
+
+const codeMockApi = `
+// 保存为 mock-api.js，使用 Node 内置 http，无需额外依赖
+const http = require('http')
+const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/users')) {
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify([{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]))
+    return
+  }
+  res.statusCode = 404
+  res.end('Not Found')
+})
+server.listen(4000, () => console.log('Mock API on http://127.0.0.1:4000'))
+`.trim()
+
+const codeMockWs = `
+// 保存为 mock-ws.js，需要先安装 ws：npm i ws --save-dev
+const WebSocket = require('ws')
+const wss = new WebSocket.Server({ port: 3002 })
+wss.on('connection', ws => {
+  ws.send(JSON.stringify({ type: 'welcome', ts: Date.now() }))
+  const timer = setInterval(() => {
+    ws.send(JSON.stringify({ type: 'tick', ts: Date.now() }))
+  }, 2000)
+  ws.on('close', () => clearInterval(timer))
+})
+console.log('Mock WS on ws://127.0.0.1:3002')
 `.trim()
 
 const codeViteProxy = `
@@ -358,6 +546,21 @@ function copy(text: string) {
 }
 
 export default function NginxLearn() {
+  const [apiLoading, setApiLoading] = useState(false)
+  const [apiResult, setApiResult] = useState<string | null>(null)
+  const [wsStatus, setWsStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
+  const [wsLast, setWsLast] = useState<string | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const [apiRetryLoading, setApiRetryLoading] = useState(false)
+  const [apiRetryResult, setApiRetryResult] = useState<string | null>(null)
+  const [wsLimitedStatus, setWsLimitedStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
+  const [wsLimitedLast, setWsLimitedLast] = useState<string | null>(null)
+  const [wsLimitedRetries, setWsLimitedRetries] = useState<number>(0)
+  const wsLimitedRef = useRef<WebSocket | null>(null)
+  const wsLimitedTimerRef = useRef<number | null>(null)
+  const wsLimitedRetryRef = useRef<number>(0)
+  const wsLimitedPausedRef = useRef<boolean>(false)
+
   const copyAll = useCallback(
     () => copy(
       [
@@ -384,6 +587,66 @@ export default function NginxLearn() {
     )(),
     []
   )
+
+  const runFetchUsers = async () => {
+    setApiLoading(true)
+    setApiResult(null)
+    try {
+      const r = await fetch('/api/users', { credentials: 'include' })
+      const text = await r.text()
+      setApiResult(text)
+    } catch (e: any) {
+      setApiResult(String(e?.message || e))
+    } finally {
+      setApiLoading(false)
+    }
+  }
+
+  const runFetchUsersAuth = async () => {
+    setApiLoading(true)
+    setApiResult(null)
+    try {
+      const r = await fetch('/api/users', {
+        credentials: 'include',
+        headers: { Authorization: 'Bearer demo-token' },
+      })
+      const text = await r.text()
+      setApiResult(text)
+    } catch (e: any) {
+      setApiResult(String(e?.message || e))
+    } finally {
+      setApiLoading(false)
+    }
+  }
+
+  const toggleWs = () => {
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+      setWsStatus('disconnected')
+      return
+    }
+    setWsStatus('connecting')
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+    const ws = new WebSocket(`${proto}://${location.host}/ws`)
+    ws.onopen = () => setWsStatus('connected')
+    ws.onmessage = (e) => setWsLast(String(e.data))
+    ws.onclose = () => {
+      wsRef.current = null
+      setWsStatus('disconnected')
+    }
+    ws.onerror = () => setWsStatus('disconnected')
+    wsRef.current = ws
+  }
+
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
+  }, [])
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
@@ -562,6 +825,33 @@ export default function NginxLearn() {
               </Card>
             ),
           },
+          {
+            key: 'http2',
+            label: 'HTTP/2 启用（TLS）',
+            children: (
+              <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeHTTP2)}>复制</Button>}>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeHTTP2}</code></pre>
+              </Card>
+            ),
+          },
+          {
+            key: 'brotli',
+            label: 'Brotli 压缩（需模块支持）',
+            children: (
+              <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeBrotli)}>复制</Button>}>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeBrotli}</code></pre>
+              </Card>
+            ),
+          },
+          {
+            key: 'cdn',
+            label: 'CDN/前端缓存策略',
+            children: (
+              <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeCDN)}>复制</Button>}>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeCDN}</code></pre>
+              </Card>
+            ),
+          },
         ]}
       />
 
@@ -654,6 +944,231 @@ export default function NginxLearn() {
             ]}
           />
         </Space>
+      </Card>
+      <Divider />
+      <Card title="构建与发布小贴士">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Paragraph>
+            <Tag color="processing">要点</Tag> 部署到子路径时需设置 <Text code>VITE_BASE</Text>，并在 Nginx 使用相同子路径进行 <Text code>try_files</Text> 回退。
+          </Paragraph>
+          <Collapse
+            items={[
+              {
+                key: 'base-win',
+                label: '设置 VITE_BASE（Windows）',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeSetBaseWin)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeSetBaseWin}</code></pre>
+                  </Card>
+                ),
+              },
+              {
+                key: 'base-nix',
+                label: '设置 VITE_BASE（macOS/Linux）',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeSetBaseNix)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeSetBaseNix}</code></pre>
+                  </Card>
+                ),
+              },
+              {
+                key: 'mock-api',
+                label: '后端 Mock：REST /api',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeMockApi)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeMockApi}</code></pre>
+                  </Card>
+                ),
+              },
+              {
+                key: 'mock-ws',
+                label: '后端 Mock：WebSocket /ws',
+                children: (
+                  <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeMockWs)}>复制</Button>}>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeMockWs}</code></pre>
+                  </Card>
+                ),
+              },
+            ]}
+          />
+          <Paragraph>
+            <Text strong>验证顺序：</Text> 先本地起 <Text code>/api</Text> 与 <Text code>/ws</Text> Mock，再通过 Vite 代理验证；最后切换到 Nginx 对应配置验证线上行为一致。
+          </Paragraph>
+        </Space>
+      </Card>
+      <Divider />
+      <Card title="前端调用示例">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space>
+            <Button type="primary" loading={apiLoading} onClick={runFetchUsers}>调用 /api/users</Button>
+            <Button loading={apiLoading} onClick={runFetchUsersAuth}>调用 /api/users（鉴权）</Button>
+            <Button onClick={toggleWs}>{wsRef.current ? '断开 WebSocket' : '连接 WebSocket'}</Button>
+          </Space>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Card size="small" title="REST 返回">
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                <code>{apiResult ?? '无'}</code>
+              </pre>
+              <div style={{ marginTop: 8 }}>
+                <Space>
+                  <Button size="small" icon={<CopyOutlined />} onClick={copy(codeFetchClient)}>复制示例代码</Button>
+                  <Button size="small" icon={<CopyOutlined />} onClick={copy(codeFetchAuthClient)}>复制鉴权示例</Button>
+                </Space>
+              </div>
+            </Card>
+            <Card size="small" title="WebSocket 状态与消息">
+              <Space>
+                <Tag color={wsStatus === 'connected' ? 'green' : wsStatus === 'connecting' ? 'orange' : 'default'}>
+                  {wsStatus}
+                </Tag>
+              </Space>
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, marginTop: 8 }}>
+                <code>{wsLast ?? '无'}</code>
+              </pre>
+              <div style={{ marginTop: 8 }}>
+                <Space>
+                  <Button size="small" icon={<CopyOutlined />} onClick={copy(codeWsClient)}>复制示例代码</Button>
+                  <Button size="small" icon={<CopyOutlined />} onClick={copy(codeWsReconnect)}>复制心跳重连示例</Button>
+                </Space>
+              </div>
+            </Card>
+          </Space>
+        </Space>
+      </Card>
+      <Divider />
+      <Card title="高级变体演示">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space>
+            <Button loading={apiRetryLoading} onClick={async () => {
+              setApiRetryLoading(true)
+              setApiRetryResult(null)
+              const backoff = async (i: number) => new Promise(r => setTimeout(r, Math.min(2000, 200 * (2 ** i))))
+              let n = 0
+              try {
+                while (true) {
+                  const ctrl = new AbortController()
+                  const to = window.setTimeout(() => ctrl.abort(), 5000)
+                  try {
+                    const res = await fetch('/api/users', { credentials: 'include', headers: { Authorization: 'Bearer demo-token' }, signal: ctrl.signal })
+                    window.clearTimeout(to)
+                    if (!res.ok) throw new Error('HTTP ' + res.status)
+                    const t = await res.text()
+                    setApiRetryResult(t)
+                    break
+                  } catch (e: any) {
+                    window.clearTimeout(to)
+                    if (n++ >= 3) throw e
+                    await backoff(n)
+                  }
+                }
+              } catch (e: any) {
+                setApiRetryResult(String(e?.message || e))
+              } finally {
+                setApiRetryLoading(false)
+              }
+            }}>调用 /api/users（重试/超时）</Button>
+          </Space>
+          <Card size="small" title="重试/超时 返回">
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+              <code>{apiRetryResult ?? '无'}</code>
+            </pre>
+            <div style={{ marginTop: 8 }}>
+              <Button size="small" icon={<CopyOutlined />} onClick={copy(codeFetchRetryAuthTimeout)}>复制重试/超时代码</Button>
+            </div>
+          </Card>
+          <Card size="small" title="WS 限次重连 控制">
+            <Space>
+              <Button onClick={() => {
+                if (wsLimitedRef.current) return
+                setWsLimitedStatus('connecting')
+                wsLimitedPausedRef.current = false
+                wsLimitedRetryRef.current = 0
+                const connect = () => {
+                  if (wsLimitedPausedRef.current) return
+                  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+                  const ws = new WebSocket(`${proto}://${location.host}/ws`)
+                  ws.onopen = () => { setWsLimitedStatus('connected'); wsLimitedTimerRef.current = window.setInterval(() => { if (ws.readyState === 1) ws.send('ping') }, 5000) }
+                  ws.onmessage = (e) => setWsLimitedLast(String(e.data))
+                  ws.onclose = () => {
+                    if (wsLimitedTimerRef.current != null) { window.clearInterval(wsLimitedTimerRef.current); wsLimitedTimerRef.current = null }
+                    wsLimitedRef.current = null
+                    setWsLimitedStatus('disconnected')
+                    if (wsLimitedPausedRef.current) return
+                    if (wsLimitedRetryRef.current >= 5) return
+                    const delay = Math.min(30000, 1000 * (2 ** wsLimitedRetryRef.current))
+                    wsLimitedRetryRef.current += 1
+                    setWsLimitedRetries(wsLimitedRetryRef.current)
+                    window.setTimeout(connect, delay)
+                  }
+                  ws.onerror = () => { /* noop */ }
+                  wsLimitedRef.current = ws
+                }
+                connect()
+              }}>启动</Button>
+              <Button onClick={() => {
+                wsLimitedPausedRef.current = true
+                if (wsLimitedTimerRef.current != null) { window.clearInterval(wsLimitedTimerRef.current); wsLimitedTimerRef.current = null }
+                if (wsLimitedRef.current) { wsLimitedRef.current.close(); wsLimitedRef.current = null }
+                setWsLimitedStatus('disconnected')
+              }}>暂停</Button>
+              <Button onClick={() => {
+                if (!wsLimitedPausedRef.current) return
+                wsLimitedPausedRef.current = false
+                wsLimitedRetryRef.current = 0
+                setWsLimitedRetries(0)
+                setWsLimitedStatus('connecting')
+                const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+                const ws = new WebSocket(`${proto}://${location.host}/ws`)
+                ws.onopen = () => { setWsLimitedStatus('connected'); wsLimitedTimerRef.current = window.setInterval(() => { if (ws.readyState === 1) ws.send('ping') }, 5000) }
+                ws.onmessage = (e) => setWsLimitedLast(String(e.data))
+                ws.onclose = () => {
+                  if (wsLimitedTimerRef.current != null) { window.clearInterval(wsLimitedTimerRef.current); wsLimitedTimerRef.current = null }
+                  wsLimitedRef.current = null
+                  setWsLimitedStatus('disconnected')
+                }
+                ws.onerror = () => { /* noop */ }
+                wsLimitedRef.current = ws
+              }}>恢复</Button>
+            </Space>
+            <div style={{ marginTop: 8 }}>
+              <Space>
+                <Tag color={wsLimitedStatus === 'connected' ? 'green' : wsLimitedStatus === 'connecting' ? 'orange' : 'default'}>{wsLimitedStatus}</Tag>
+                <Tag>retry {wsLimitedRetries}</Tag>
+              </Space>
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, marginTop: 8 }}>
+                <code>{wsLimitedLast ?? '无'}</code>
+              </pre>
+              <div style={{ marginTop: 8 }}>
+                <Button size="small" icon={<CopyOutlined />} onClick={copy(codeWsReconnectLimited)}>复制限次重连代码</Button>
+              </div>
+            </div>
+          </Card>
+        </Space>
+      </Card>
+      <Divider />
+      <Card title="高级变体（仅代码可复制）">
+        <Collapse
+          items={[
+            {
+              key: 'fetch-retry',
+              label: 'Fetch：鉴权失败/超时重试（带 AbortController）',
+              children: (
+                <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeFetchRetryAuthTimeout)}>复制</Button>}>
+                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeFetchRetryAuthTimeout}</code></pre>
+                </Card>
+              ),
+            },
+            {
+              key: 'ws-limited',
+              label: 'WebSocket：自动重连（上限与暂停/恢复）',
+              children: (
+                <Card size="small" bordered={false} extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(codeWsReconnectLimited)}>复制</Button>}>
+                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}><code>{codeWsReconnectLimited}</code></pre>
+                </Card>
+              ),
+            },
+          ]}
+        />
       </Card>
       <Divider />
       <Card title="常用验证命令" extra={<Button size="small" icon={<CopyOutlined />} onClick={copy(curlSmoke)}>复制</Button>}>
