@@ -29,12 +29,14 @@ import AsyncForm from './components/AsyncForm'
 import CustomComponentForm from './components/CustomComponentForm'
 import RealWorldForm from './components/RealWorldForm'
 import PluginLearning from './pages/pluginLearn/lodash'
+import NginxLearn from './pages/pluginLearn/ngix'
 const { Header, Content, Sider } = Layout
 const { Title } = Typography
 
 type PageKey = 
   | 'core'
   | 'lodash'
+  | 'ngix'
   | 'reactive'
   | 'react'
   | 'hooks'
@@ -51,6 +53,7 @@ type PageKey =
 
 const pageComponents: Record<PageKey, React.ReactNode> = {
   lodash: <PluginLearning />,
+  ngix: <NginxLearn />,
   core: <CoreExample />,
   reactive: <ReactiveExample />,
   react: <ReactExample />,
@@ -119,6 +122,11 @@ const menuItems = [
         key: 'lodash',
         icon: <ExperimentOutlined />,
         label: 'Lodash学习',
+      },
+      {
+        key: 'ngix',
+        icon: <ExperimentOutlined />,
+        label: 'Nginx学习',
       },
     ],
   },
@@ -237,4 +245,3 @@ function App() {
 }
 
 export default App
-

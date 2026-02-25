@@ -816,6 +816,7 @@ function nextPage() {
       }))
       .sortBy('avgAge')
       .value()
+      console.log(users,result)
     setGroupStats(result)
   }
 
@@ -1130,7 +1131,7 @@ function nextPage() {
     () => debounce(() => setDebTrailCount((c) => c + 1), 300, { leading: false, trailing: true }),
     []
   )
-
+  console.log(chain(users))
   return (
     <Card title="Lodash - chain 学习案例" type="inner">
       <Space direction="vertical" style={{ width: '100%' }} size="large">
